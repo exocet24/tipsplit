@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Tip calculator and bill splitter. Simple, fast, offline.">
+    <title>TipSplit</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #101018;
+            --bg-card: #16161f;
+            --bg-input: #1c1c28;
+            --cyan: #00e5ff;
+            --cyan-dim: #00e5ff30;
+            --cyan-glow: #00e5ff50;
+            --magenta: #ff00aa;
+            --magenta-dim: #ff00aa30;
+            --green: #00ff88;
+            --green-dim: #00ff8830;
+            --orange: #ff9500;
+            --orange-dim: #ff950030;
+            --text: #e8e8f0;
+            --text-dim: #707088;
+            --text-muted: #505068;
+            --border: #252535;
+            --border-light: #303045;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+            overflow-x: hidden;
+        }
+
+        /* Light Mode */
+        body.light {
+            --bg-primary: #f2f2f7;
+            --bg-secondary: #e8e8f0;
+            --bg-card: #ffffff;
+            --bg-input: #ededf5;
+            --cyan: #0088aa;
+            --cyan-dim: #0088aa20;
+            --cyan-glow: #0088aa40;
+            --magenta: #cc0077;
+            --magenta-dim: #cc007720;
+            --green: #008844;
+            --green-dim: #00884420;
+            --orange: #cc6600;
+            --orange-dim: #cc660020;
+            --text: #1a1a2e;
+            --text-dim: #55556a;
+            --text-muted: #8888a0;
+            --border: #d0d0e0;
+            --border-light: #c0c0d5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+        }
+
+        /* Theme Toggle */
+        .theme-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        /* Language Switcher */
+        .lang-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn.active {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: var(--cyan-dim);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        /* Input */
+        .input-group { margin-bottom: 16px; }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            font-weight: 300;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 14px;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 45px 14px 36px;
+            font-size: 1.4rem;
+            font-weight: 500;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s ease;
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 3px var(--cyan-dim);
+        }
+
+        /* Tip Presets */
+        .tip-presets {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tip-preset {
+            flex: 1;
+            padding: 12px 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .tip-preset:hover {
+            background: var(--bg-secondary);
+            border-color: var(--border-light);
+        }
+
+        .tip-preset.active {
+            background: var(--bg-card);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan-dim);
+        }
+
+        /* People Counter */
+        .people-counter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .people-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .people-btn:hover { background: var(--bg-secondary); border-color: var(--border-light); }
+        .people-btn:active { transform: scale(0.95); }
+        .people-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .people-count {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--magenta);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .people-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* Results */
+        .results {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 3px solid var(--cyan);
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-row:last-child { border-bottom: none; }
+
+        .result-label { color: var(--text-dim); font-size: 0.85rem; }
+
+        .result-value {
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .result-row.highlight { padding-top: 14px; margin-top: 6px; }
+        .result-row.highlight .result-label { color: var(--text); font-weight: 500; }
+        .result-row.highlight .result-value {
+            color: var(--cyan);
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-shadow: 0 0 20px var(--cyan-dim);
+        }
+
+        .result-row.per-person .result-value {
+            color: var(--magenta);
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-shadow: 0 0 20px var(--magenta-dim);
+        }
+
+        /* Round Buttons */
+        .round-buttons { display: flex; gap: 8px; margin-top: 14px; }
+
+        .round-btn {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .round-btn:hover { background: var(--bg-secondary); color: var(--text); }
+        .round-btn.active { border-color: var(--green); color: var(--green); }
+
+        /* Action Buttons */
+        .action-buttons { display: flex; gap: 10px; margin-top: 14px; }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover { background: var(--border); color: var(--text); }
+        .action-btn.copied { border-color: var(--green); color: var(--green); }
+        .action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        /* Quick Tips */
+        .quick-tips {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .quick-tip {
+            background: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .quick-tip span { color: var(--orange); font-weight: 600; }
+
+        /* History */
+        .history-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-title {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .history-clear {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .history-clear:hover { color: var(--magenta); background: var(--magenta-dim); }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover { background: var(--bg-input); }
+
+        .history-item-left { display: flex; flex-direction: column; gap: 2px; }
+
+        .history-item-amount {
+            font-family: 'SF Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .history-item-meta { font-size: 0.7rem; color: var(--text-muted); }
+
+        .history-item-result {
+            font-family: 'SF Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--magenta);
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 16px;
+        }
+
+        /* Footer */
+        footer { text-align: center; padding-top: 12px; margin-top: auto; }
+        .footer-brand { color: var(--text-muted); font-size: 0.75rem; letter-spacing: 1px; }
+        .footer-links { margin-top: 6px; display: flex; justify-content: center; gap: 16px; }
+        .footer-links a { color: var(--text-dim); font-size: 0.7rem; text-decoration: none; }
+        .footer-links a:hover { color: var(--cyan); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+        @media (max-width: 360px) {
+            .logo { font-size: 1.6rem; }
+            .card { padding: 14px; }
+            .tip-preset { padding: 10px 4px; font-size: 0.8rem; }
+            .people-count { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+                <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+            <div class="logo">TIPSPLIT</div>
+            <div class="tagline" id="tagline"></div>
+            <div class="lang-switcher">
+                <button class="lang-btn" data-lang="fr" onclick="setLanguage('fr')">FR</button>
+                <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
+            </div>
+        </header>
+
+        <!-- Bill -->
+        <div class="card">
+            <div class="card-title" id="labelBill"></div>
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="billAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00" oninput="calculate()">
+                </div>
+            </div>
+
+            <div class="card-title" id="labelTip"></div>
+            <div class="tip-presets">
+                <button class="tip-preset" data-tip="10" onclick="setTipPreset(10)">10%</button>
+                <button class="tip-preset active" data-tip="15" onclick="setTipPreset(15)">15%</button>
+                <button class="tip-preset" data-tip="18" onclick="setTipPreset(18)">18%</button>
+                <button class="tip-preset" data-tip="20" onclick="setTipPreset(20)">20%</button>
+                <button class="tip-preset" data-tip="25" onclick="setTipPreset(25)">25%</button>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 0;">
+                <div class="input-wrapper">
+                    <input type="number" id="tipPercent" inputmode="decimal" step="0.5" min="0" max="100" value="15" oninput="onTipInput()">
+                    <span class="input-suffix">%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Split -->
+        <div class="card">
+            <div class="card-title" id="labelSplit"></div>
+            <div class="people-counter">
+                <button class="people-btn" id="decreaseBtn" onclick="changePeople(-1)" disabled>−</button>
+                <span class="people-count" id="peopleCount">1</span>
+                <button class="people-btn" onclick="changePeople(1)">+</button>
+            </div>
+            <div class="people-label" id="labelPerson"></div>
+        </div>
+
+        <!-- Results -->
+        <div class="card">
+            <div class="card-title" id="labelResult"></div>
+            <div class="results">
+                <div class="result-row">
+                    <span class="result-label" id="labelSubtotal"></span>
+                    <span class="result-value" id="subtotal">$0.00</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label"><span id="labelTipLine"></span> (<span id="tipPercentDisplay">15</span>%)</span>
+                    <span class="result-value" id="tipAmount">$0.00</span>
+                </div>
+                <div class="result-row highlight">
+                    <span class="result-label" id="labelTotal"></span>
+                    <span class="result-value" id="totalAmount">$0.00</span>
+                </div>
+                <div class="result-row per-person" id="perPersonRow" style="display: none;">
+                    <span class="result-label" id="labelPerPerson"></span>
+                    <span class="result-value" id="perPerson">$0.00</span>
+                </div>
+            </div>
+
+            <div class="round-buttons">
+                <button class="round-btn" id="roundDownBtn" onclick="roundTotal('down')" id="btnRoundDown"></button>
+                <button class="round-btn active" id="roundNoneBtn" onclick="roundTotal('none')"></button>
+                <button class="round-btn" id="roundUpBtn" onclick="roundTotal('up')"></button>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn" id="copyBtn" onclick="copyResult()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span id="copyBtnText"></span>
+                </button>
+                <button class="action-btn" onclick="resetAll()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+                    <span id="resetBtnText"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Tips Guide -->
+        <div class="quick-tips" id="quickTips"></div>
+
+        <!-- History -->
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title" id="historyTitle"></span>
+                <button class="history-clear" id="historyClearBtn" onclick="clearHistory()"></button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+
+        <footer>
+            <div class="footer-brand">3DNG</div>
+            <div class="footer-links">
+                <a href="privacy.html" id="privacyLink"></a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ── Translations ──────────────────────────────────────────────────────
+        const TRANSLATIONS = {
+            fr: {
+                tagline: 'Pourboire & Partage',
+                bill: 'Facture',
+                tip: 'Pourboire',
+                split: 'Partager entre',
+                person: 'personne(s)',
+                result: 'Résultat',
+                subtotal: 'Sous-total',
+                tipLine: 'Pourboire',
+                total: 'Total',
+                perPerson: 'Par personne',
+                roundDown: '↓ Arrondir',
+                roundExact: 'Exact',
+                roundUp: '↑ Arrondir',
+                copy: 'Copier',
+                copied: 'Copié !',
+                reset: 'Reset',
+                history: 'Historique',
+                historyClear: 'Effacer',
+                historyEmpty: 'Aucun calcul',
+                privacy: 'Confidentialité',
+                perPersonShort: '/pers',
+                quickTips: [
+                    { label: 'Service OK', value: '10-12%' },
+                    { label: 'Bon service', value: '15%' },
+                    { label: 'Excellent', value: '18-20%' },
+                    { label: 'Exceptionnel', value: '25%+' }
+                ]
+            },
+            en: {
+                tagline: 'Tip & Bill Split',
+                bill: 'Bill',
+                tip: 'Tip',
+                split: 'Split between',
+                person: 'person(s)',
+                result: 'Result',
+                subtotal: 'Subtotal',
+                tipLine: 'Tip',
+                total: 'Total',
+                perPerson: 'Per person',
+                roundDown: '↓ Round down',
+                roundExact: 'Exact',
+                roundUp: '↑ Round up',
+                copy: 'Copy',
+                copied: 'Copied!',
+                reset: 'Reset',
+                history: 'History',
+                historyClear: 'Clear',
+                historyEmpty: 'No calculations',
+                privacy: 'Privacy',
+                perPersonShort: '/person',
+                quickTips: [
+                    { label: 'Decent service', value: '10-12%' },
+                    { label: 'Good service', value: '15%' },
+                    { label: 'Excellent', value: '18-20%' },
+                    { label: 'Exceptional', value: '25%+' }
+                ]
+            },
+            es: {
+                tagline: 'Propina & División',
+                bill: 'Factura',
+                tip: 'Propina',
+                split: 'Dividir entre',
+                person: 'persona(s)',
+                result: 'Resultado',
+                subtotal: 'Subtotal',
+                tipLine: 'Propina',
+                total: 'Total',
+                perPerson: 'Por persona',
+                roundDown: '↓ Redondear',
+                roundExact: 'Exacto',
+                roundUp: '↑ Redondear',
+                copy: 'Copiar',
+                copied: '¡Copiado!',
+                reset: 'Reset',
+                history: 'Historial',
+                historyClear: 'Borrar',
+                historyEmpty: 'Sin cálculos',
+                privacy: 'Privacidad',
+                perPersonShort: '/persona',
+                quickTips: [
+                    { label: 'Servicio OK', value: '10-12%' },
+                    { label: 'Buen servicio', value: '15%' },
+                    { label: 'Excelente', value: '18-20%' },
+                    { label: 'Excepcional', value: '25%+' }
+                ]
+            }
+        };
+
+        // ── State ─────────────────────────────────────────────────────────────
+        let tipPercent = 15;
+        let people = 1;
+        let roundMode = 'none';
+        let currentLang = 'fr';
+        let history = [];
+        let historyDebounce = null;
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+        function t(key) { return TRANSLATIONS[currentLang][key] || key; }
+
+        function formatCurrency(value) { return '$' + value.toFixed(2); }
+
+        // ── Theme ─────────────────────────────────────────────────────────────
+        const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        const sunIcon  = `<circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
+
+        function applyTheme(theme) {
+            document.body.classList.toggle('light', theme === 'light');
+            document.getElementById('themeIcon').innerHTML = theme === 'light' ? sunIcon : moonIcon;
+        }
+
+        function toggleTheme() {
+            const newTheme = document.body.classList.contains('light') ? 'dark' : 'light';
+            localStorage.setItem('tipsplit_theme', newTheme);
+            applyTheme(newTheme);
+        }
+
+        // ── Language ──────────────────────────────────────────────────────────
+        function detectLanguage() {
+            const saved = localStorage.getItem('tipsplit_lang');
+            if (saved && TRANSLATIONS[saved]) return saved;
+            const nav = (navigator.language || '').slice(0, 2).toLowerCase();
+            if (nav === 'es') return 'es';
+            if (nav === 'en') return 'en';
+            return 'fr';
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('tipsplit_lang', lang);
+            document.documentElement.lang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            document.getElementById('tagline').textContent = t('tagline');
+            document.getElementById('labelBill').textContent = t('bill');
+            document.getElementById('labelTip').textContent = t('tip');
+            document.getElementById('labelSplit').textContent = t('split');
+            document.getElementById('labelPerson').textContent = t('person');
+            document.getElementById('labelResult').textContent = t('result');
+            document.getElementById('labelSubtotal').textContent = t('subtotal');
+            document.getElementById('labelTipLine').textContent = t('tipLine');
+            document.getElementById('labelTotal').textContent = t('total');
+            document.getElementById('labelPerPerson').textContent = t('perPerson');
+            document.getElementById('roundDownBtn').textContent = t('roundDown');
+            document.getElementById('roundNoneBtn').textContent = t('roundExact');
+            document.getElementById('roundUpBtn').textContent = t('roundUp');
+            document.getElementById('copyBtnText').textContent = t('copy');
+            document.getElementById('resetBtnText').textContent = t('reset');
+            document.getElementById('historyTitle').textContent = t('history');
+            document.getElementById('historyClearBtn').textContent = t('historyClear');
+            document.getElementById('privacyLink').textContent = t('privacy');
+
+            // Quick tips
+            document.getElementById('quickTips').innerHTML = t('quickTips')
+                .map(tip => `<span class="quick-tip">${tip.label} <span>${tip.value}</span></span>`)
+                .join('');
+
+            renderHistory();
+        }
+
+        // ── Tip ───────────────────────────────────────────────────────────────
+        function setTipPreset(percent) {
+            tipPercent = percent;
+            document.getElementById('tipPercent').value = percent;
+            document.querySelectorAll('.tip-preset').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.tip) === percent);
+            });
+            calculate();
+        }
+
+        function onTipInput() {
+            tipPercent = parseFloat(document.getElementById('tipPercent').value) || 0;
+            document.querySelectorAll('.tip-preset').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.tip) === tipPercent);
+            });
+            calculate();
+        }
+
+        // ── People ────────────────────────────────────────────────────────────
+        function changePeople(delta) {
+            people = Math.max(1, Math.min(99, people + delta));
+            document.getElementById('peopleCount').textContent = people;
+            document.getElementById('decreaseBtn').disabled = people <= 1;
+            document.getElementById('perPersonRow').style.display = people > 1 ? 'flex' : 'none';
+            calculate();
+        }
+
+        // ── Round ─────────────────────────────────────────────────────────────
+        function roundTotal(mode) {
+            roundMode = mode;
+            document.getElementById('roundDownBtn').classList.toggle('active', mode === 'down');
+            document.getElementById('roundNoneBtn').classList.toggle('active', mode === 'none');
+            document.getElementById('roundUpBtn').classList.toggle('active', mode === 'up');
+            calculate();
+        }
+
+        // ── Calculate ─────────────────────────────────────────────────────────
+        function calculate() {
+            const bill = parseFloat(document.getElementById('billAmount').value) || 0;
+            let tip = bill * (tipPercent / 100);
+            let total = bill + tip;
+
+            if (roundMode === 'up' && total > 0) {
+                total = Math.ceil(total);
+                tip = total - bill;
+            } else if (roundMode === 'down' && total > 0) {
+                total = Math.floor(total);
+                tip = Math.max(0, total - bill);
+            }
+
+            const perPersonAmt = total / people;
+
+            document.getElementById('subtotal').textContent = formatCurrency(bill);
+            document.getElementById('tipAmount').textContent = formatCurrency(tip);
+            document.getElementById('tipPercentDisplay').textContent = tipPercent;
+            document.getElementById('totalAmount').textContent = formatCurrency(total);
+            document.getElementById('perPerson').textContent = formatCurrency(perPersonAmt);
+
+            saveSettings();
+
+            if (bill > 0) {
+                clearTimeout(historyDebounce);
+                historyDebounce = setTimeout(() => {
+                    saveToHistory(bill, total, perPersonAmt);
+                }, 800);
+            }
+        }
+
+        // ── Copy ──────────────────────────────────────────────────────────────
+        function copyResult() {
+            const bill = parseFloat(document.getElementById('billAmount').value) || 0;
+            if (bill === 0) return;
+
+            const tip = parseFloat(document.getElementById('tipAmount').textContent.replace('$', ''));
+            const total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', ''));
+            const perPersonAmt = total / people;
+
+            let text = `${t('bill')}: ${formatCurrency(bill)}\n`;
+            text += `${t('tipLine')} (${tipPercent}%): ${formatCurrency(tip)}\n`;
+            text += `${t('total')}: ${formatCurrency(total)}`;
+            if (people > 1) {
+                text += `\n${t('perPerson')} (${people}): ${formatCurrency(perPersonAmt)}`;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const btnText = document.getElementById('copyBtnText');
+                btn.classList.add('copied');
+                btnText.textContent = t('copied');
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btnText.textContent = t('copy');
+                }, 2000);
+            });
+        }
+
+        // ── Reset ─────────────────────────────────────────────────────────────
+        function resetAll() {
+            document.getElementById('billAmount').value = '';
+            tipPercent = 15;
+            document.getElementById('tipPercent').value = 15;
+            people = 1;
+            document.getElementById('peopleCount').textContent = 1;
+            document.getElementById('decreaseBtn').disabled = true;
+            document.getElementById('perPersonRow').style.display = 'none';
+            roundMode = 'none';
+            document.querySelectorAll('.tip-preset').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.tip) === 15);
+            });
+            document.getElementById('roundDownBtn').classList.remove('active');
+            document.getElementById('roundNoneBtn').classList.add('active');
+            document.getElementById('roundUpBtn').classList.remove('active');
+            calculate();
+        }
+
+        // ── History ───────────────────────────────────────────────────────────
+        function saveToHistory(bill, total, perPersonAmt) {
+            const last = history[0];
+            if (last && last.bill === bill && last.tipPercent === tipPercent && last.people === people) return;
+
+            history.unshift({ bill, total, perPerson: perPersonAmt, tipPercent, people, timestamp: Date.now() });
+            if (history.length > 20) history.pop();
+            localStorage.setItem('tipsplit_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem('tipsplit_history');
+            if (saved) history = JSON.parse(saved);
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (history.length === 0) {
+                list.innerHTML = `<div class="history-empty">${t('historyEmpty')}</div>`;
+                return;
+            }
+            list.innerHTML = history.slice(0, 10).map(entry => {
+                const meta = entry.people > 1
+                    ? `${entry.tipPercent}% · ${entry.people} ${t('person')}`
+                    : `${entry.tipPercent}%`;
+                const result = entry.people > 1
+                    ? formatCurrency(entry.perPerson) + t('perPersonShort')
+                    : formatCurrency(entry.total);
+                return `
+                    <div class="history-item" onclick="loadHistoryItem(${entry.bill}, ${entry.tipPercent}, ${entry.people})">
+                        <div class="history-item-left">
+                            <span class="history-item-amount">${formatCurrency(entry.bill)}</span>
+                            <span class="history-item-meta">${meta}</span>
+                        </div>
+                        <span class="history-item-result">${result}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadHistoryItem(bill, tip, ppl) {
+            document.getElementById('billAmount').value = bill;
+            tipPercent = tip;
+            document.getElementById('tipPercent').value = tip;
+            document.querySelectorAll('.tip-preset').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.tip) === tip);
+            });
+            people = ppl;
+            document.getElementById('peopleCount').textContent = ppl;
+            document.getElementById('decreaseBtn').disabled = ppl <= 1;
+            document.getElementById('perPersonRow').style.display = ppl > 1 ? 'flex' : 'none';
+            calculate();
+        }
+
+        function clearHistory() {
+            history = [];
+            localStorage.removeItem('tipsplit_history');
+            renderHistory();
+        }
+
+        // ── Settings ──────────────────────────────────────────────────────────
+        function saveSettings() {
+            localStorage.setItem('tipsplit_settings', JSON.stringify({ tipPercent }));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('tipsplit_settings');
+            if (saved) {
+                const s = JSON.parse(saved);
+                if (s.tipPercent) {
+                    tipPercent = s.tipPercent;
+                    document.getElementById('tipPercent').value = tipPercent;
+                    document.querySelectorAll('.tip-preset').forEach(btn => {
+                        btn.classList.toggle('active', parseInt(btn.dataset.tip) === tipPercent);
+                    });
+                }
+            }
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('tipsplit_theme') || 'dark';
+            applyTheme(savedTheme);
+
+            loadHistory();
+            loadSettings();
+
+            currentLang = detectLanguage();
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === currentLang);
+            });
+            document.documentElement.lang = currentLang;
+            applyTranslations();
+            calculate();
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
