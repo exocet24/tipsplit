@@ -9,7 +9,8 @@
     <meta name="description" content="Tip calculator and bill splitter. Simple, fast, offline.">
     <title>TipSplit</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         * {
@@ -992,7 +993,7 @@
 
         // ── Init ──────────────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('tipsplit_theme') || 'dark';
+            const savedTheme = localStorage.getItem('tipsplit_theme') || 'light';
             applyTheme(savedTheme);
 
             loadHistory();
